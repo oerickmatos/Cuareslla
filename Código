@@ -1,0 +1,116 @@
+// Seguidor de linha - Grupo 2 - T211
+int contador = 0;
+int ton = 60;
+int curva = 0;
+
+#define ATIVA1 7
+#define ATIVA2 8
+#define M1 2
+#define M2 3
+#define M3 A0
+#define M4 A1
+#define SEN1 A4
+#define SEN2 A3
+#define SEN3 A2
+
+void PARAR() {
+  digitalWrite(M2, LOW);
+  digitalWrite(M1, LOW);
+  digitalWrite(M3, LOW);
+  digitalWrite(M4, LOW);
+}
+
+void SEGUIR() { 
+  digitalWrite(M2, LOW);
+  digitalWrite(M1, HIGH);
+  digitalWrite(M3, HIGH);
+  digitalWrite(M4, LOW); 
+}
+
+void DIREITA(){ 
+  digitalWrite(M2, LOW);
+  digitalWrite(M1, HIGH);
+  digitalWrite(M3, LOW);
+  digitalWrite(M4, LOW);
+ }
+
+void ESQUERDA(){ 
+  digitalWrite(M2, LOW);
+  digitalWrite(M1, LOW);
+  digitalWrite(M3, HIGH);
+  digitalWrite(M4, LOW);
+ }
+
+void setup() { 
+  pinMode(ATIVA2, OUTPUT);
+  pinMode(ATIVA1, OUTPUT);
+  pinMode(M1, OUTPUT);
+  pinMode(M2, OUTPUT);
+  pinMode(M3, OUTPUT);
+  pinMode(M4, OUTPUT);
+  pinMode(SEN1, INPUT_PULLUP);
+  pinMode(SEN2, INPUT_PULLUP);
+  pinMode(SEN3, INPUT_PULLUP);
+
+  Serial.begin(9600);
+
+  //set timer2 interrupt at 8kHz
+  TCCR2A = 0;// set entire TCCR2A register to 0
+  TCCR2B = 0;// same for TCCR2B
+  TCNT2  = 0;//initialize counter value to 0
+  // set compare match register for 8khz increments
+  OCR2A = 129;// = (16*10^6) / (8000*8) - 1 (must be <256)
+  // turn on CTC mode
+  TCCR2A |= (1 << WGM21);
+  // Set CS21 bit for 8 prescaler
+  TCCR2B |= (1 << CS21);
+  // enable timer compare interrupt
+  TIMSK2 |= (1 << OCIE2A);
+  sei();//allow interrupts
+}
+
+ISR(TIMER2_COMPA_vect) {
+  if (contador == 0) {
+    digitalWrite(ATIVA1, HIGH); digitalWrite(ATIVA2, HIGH);
+  }
+  if (contador == ton) {
+    digitalWrite(ATIVA1, LOW);  digitalWrite(ATIVA2, LOW);
+  }
+  contador++;
+  if (contador == 160) contador = 0;
+}
+
+void loop() {
+  
+  if (digitalRead(SEN1) == 0 && digitalRead(SEN2) == 0 && digitalRead(SEN3) == 0) { 
+    if ( curva ==  1 ) {  ESQUERDA();  }
+    if ( curva ==  2 ) {  DIREITA();   }
+    if ( curva ==  3 ) {  SEGUIR();    }
+  }
+  
+ if (digitalRead(SEN1) == 1 && digitalRead(SEN2) == 0 && digitalRead(SEN3) == 0) {
+     ESQUERDA();
+     curva = 1;
+    
+  }
+  
+  if (digitalRead(SEN1) == 0 && digitalRead(SEN2) == 1 && digitalRead(SEN3) == 0) {
+     SEGUIR(); 
+     curva = 3;
+
+    } 
+    
+    if (digitalRead(SEN1) == 0 && digitalRead(SEN2) == 0 && digitalRead(SEN3) == 1) {
+      DIREITA();
+      curva = 2;
+
+     }
+
+
+
+     if (digitalRead(SEN1) == 1 && digitalRead(SEN2) == 1 && digitalRead(SEN3) == 1) {
+       SEGUIR();
+       curva = 3;
+
+     }
+}
